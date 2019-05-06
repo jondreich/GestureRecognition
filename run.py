@@ -1,14 +1,25 @@
 import cv2
 import numpy as np
 
+def compare(contours):
+	peaceImg = cv2.imread("gestures/peace.png")
+	peaceImg = cv2.cvtColor( peaceImg, cv2.COLOR_BGR2GRAY)
+	peaceImg = cv2.GaussianBlur(gray, (5,5), 0)
+	_, peaceImg = cv2.threshold(peaceImg, 50, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+	_, peaceCont, _ = cv2.findContours(peaceImg, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+	ret = cv2.matchShapes(contours[0], peaceCont[0], 1, 0.0)
+	print(ret)
+	return ret
 
 cap = cv2.VideoCapture(2)
 
 while(True) :
 	ret,img = cap.read()
+	cv2.imwrite("saved.png", img) # this is for saving pictures of ur hand to use for comparison
 	gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 	blur = cv2.GaussianBlur(gray,(5,5),0)
-	ret,thresh = cv2.threshold(blur,250,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+	ret,thresh = cv2.threshold(blur,50,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
   
 	im2, contours, hierarchy = cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
 	drawing = np.zeros(img.shape,np.uint8)
@@ -31,8 +42,8 @@ while(True) :
 		cy = int(moments['m01']/moments['m00'])
 			  
 	center=(cx,cy)
-	cv2.circle(img, center, 40, [0,255,180], 2)
-	cv2.circle(img, center, 5, [0,0,255], 2)
+	#cv2.circle(img, center, 40, [0,255,180], 2)
+	cv2.circle(img, center, 5, [0,255,255], 2)
 	cv2.drawContours(drawing, [cnt], 0, (0,255,0), 2) 
 	cv2.drawContours(drawing, [hull], 0, (255,100,0), 2) 
 		  
@@ -53,13 +64,15 @@ while(True) :
 			cv2.line(img,start,end,[255,100,0],2)
 			
 			cv2.circle(img,far,5,[0,0,255],-1)
+		if i >= 5 and len(cnt) >= 14:
+			cv2.putText(img, compare(contours), center, 0, 1.0, [255, 255, 255], 1)
 		i=0
 	except AttributeError:
 		print("no shape")
 	
 	cv2.imshow('output',drawing)
 	cv2.imshow('input',img)
-	
+
 	if(cv2.waitKey(1) & 0xFF == ord('q')):
 		break
 
